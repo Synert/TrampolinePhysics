@@ -6,10 +6,12 @@ public class Spring : MonoBehaviour
 {
     [SerializeField] private float springMax = 5.0f;
     [SerializeField] private float force = 100.0f;
+    private List<Transform> neighbors;
     private float neighborForce = 500.0f;
     private bool doOnce = false;
     private Rigidbody rb;
     private Vector3 origin;
+    private float dist = 1.0f;
 
 	void Start()
     {
@@ -25,14 +27,33 @@ public class Spring : MonoBehaviour
         {
             doOnce = true;
 
-            foreach(Collider spring in Physics.OverlapSphere(transform.position + new Vector3(0.0f, springMax), 1.0f))
+            neighbors = new List<Transform>();
+
+            foreach(Collider spring in Physics.OverlapSphere(rb.transform.position, dist))
             {
                 if (spring.gameObject == GetComponentInChildren<Rigidbody>().gameObject) continue;
-                SpringJoint newJoint = spring.gameObject.AddComponent<SpringJoint>();
+                neighbors.Add(spring.GetComponentInParent<Rigidbody>().transform);
+                /*SpringJoint newJoint = spring.gameObject.AddComponent<SpringJoint>();
                 newJoint.anchor = Vector3.zero;
                 newJoint.connectedAnchor = Vector3.zero;
                 newJoint.connectedBody = GetComponentInChildren<Rigidbody>();
-                newJoint.spring = neighborForce;
+                newJoint.spring = neighborForce;*/
+            }
+        }
+
+        foreach(Transform neighbor in neighbors)
+        {
+            float desiredHeight = rb.transform.position.y;
+            float yDist = desiredHeight - neighbor.position.y;
+            if (yDist < 0.0f)
+            {
+                neighbor.GetComponent<Rigidbody>().AddForce(new Vector3(0.0f, yDist * neighborForce * 0.03f, 0.0f), ForceMode.VelocityChange);
+                //neighbor.position += new Vector3(0.0f, yDist * 0.25f, 0.0f);
+            }
+            else
+            {
+                neighbor.GetComponent<Rigidbody>().AddForce(new Vector3(0.0f, yDist * neighborForce * 0.005f, 0.0f), ForceMode.VelocityChange);
+                //neighbor.position += new Vector3(0.0f, yDist * 0.1f, 0.0f);
             }
         }
     }
@@ -47,5 +68,10 @@ public class Spring : MonoBehaviour
     public void SetOrigin(Vector3 newOrigin)
     {
         origin = newOrigin;
+    }
+
+    public void SetDistance(float newDistance)
+    {
+        dist = newDistance;
     }
 }

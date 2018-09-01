@@ -7,7 +7,7 @@ public class TrampolineManager : MonoBehaviour
     [SerializeField] Spring springPrefab;
     [SerializeField] private float distance = 1.0f; //distance between springs
     [SerializeField] private int size = 5;
-    [SerializeField] private Vector3 initPos = Vector3.zero;
+    private Vector3 initPos = Vector3.zero;
     [SerializeField] private float minForce = 1000.0f;
     [SerializeField] private float maxMult = 3.0f;
     [SerializeField] private float boxHeight = 3.0f;
@@ -18,6 +18,7 @@ public class TrampolineManager : MonoBehaviour
 
 	void Start()
     {
+        initPos = transform.position - new Vector3(0.0f, boxHeight, 0.0f);
         mesh = gameObject.AddComponent<MeshFilter>().mesh;
         mesh = new Mesh();
         springs = new Spring[size * 2, size * 2];
@@ -28,15 +29,16 @@ public class TrampolineManager : MonoBehaviour
         {
             for (int y = -size; y < size; y++)
             {
-                Spring newSpring = Instantiate(springPrefab);
+                Spring newSpring = Instantiate(springPrefab, transform);
                 float scalar = Mathf.Max(Mathf.Abs(x), Mathf.Abs(y)) / (float)size;
                 scalar *= (maxMult - 1.0f);
                 scalar += 1.0f;
-                newSpring.SetForce(minForce * scalar, minForce * maxMult);
+                newSpring.SetForce(minForce * scalar, minForce);
+                newSpring.SetDistance(distance);
                 newSpring.transform.position = initPos + new Vector3(x * distance, 0, y * distance);
-                newSpring.GetComponentInChildren<Rigidbody>().transform.localScale = new Vector3(distance, boxHeight, distance);
+                newSpring.GetComponentInChildren<Rigidbody>().transform.localScale = new Vector3(distance * 0.75f, boxHeight, distance * 0.75f);
                 springs[(x + size), (y + size)] = newSpring;
-                vertices[(x + size) + (y + size) * (size * 2)] = initPos + new Vector3(x * distance, 0, y * distance);
+                vertices[(x + size) + (y + size) * (size * 2)] = new Vector3(x * distance, 0, y * distance);
             }
         }
 
@@ -71,12 +73,15 @@ public class TrampolineManager : MonoBehaviour
 	void Update()
     {
         //mesh.Clear();
+        Vector3 add = new Vector3(0.0f, boxHeight / 2.0f, 0.0f);
+        add -= transform.position;
 
         for (int x = -size; x < size; x++)
         {
             for (int y = -size; y < size; y++)
             {
-                vertices[(x + size) + (y + size) * (size * 2)] = springs[(x + size), (y + size)].GetComponentInChildren<Rigidbody>().transform.position + new Vector3(0.0f, boxHeight / 2.0f, 0.0f);
+                Vector3 newPos = springs[(x + size), (y + size)].GetComponentInChildren<Rigidbody>().transform.position + add;
+                vertices[(x + size) + (y + size) * (size * 2)] = Vector3.Lerp(vertices[(x + size) + (y + size) * (size * 2)], newPos, 0.15f);
             }
         }
 
